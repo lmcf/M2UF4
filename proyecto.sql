@@ -45,8 +45,20 @@ create table persona of persona_ob (
 -- Vemos como ha quedado la tabla
 \d persona
 
--- Insert para probar
-insert into persona values ('11111111A',1,('Jose','De','Prueba'),('Calle la calle',420,'2','4',07034,'Barcelona','Spain'));
+-- PRUEBAS
+-- Prueba de validar_dni en este caso está bien el dni
+insert into persona values ('11111111A',1,
+('Jose','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'));
+
+-- En los siguientes casos está mal
+insert into persona values ('1111111AA',1,
+('Jose','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'));
+
+insert into persona values ('11111A',1,
+('Jose','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'));
 
 --Creamos tipo Hotel
 create type hotel_ob as (
@@ -59,7 +71,7 @@ create type hotel_ob as (
 
 -- Sequence para id_hotel
 create sequence id_hotel_sequence
-  start 1000
+  start 1
   increment 1;
 
 -- Sequence para id_hotel
@@ -67,6 +79,9 @@ create table hotel(
     id_hotel serial primary key,
     hoteles hotel_ob[]
 );
+
+-- Vemos como ha quedado la tabla
+\d hotel
 
 -- Insert prueba hoteles
 -- FALLA
@@ -84,7 +99,7 @@ create type ciudad_ob as (
 
 -- Sequence para id_ciudad
 create sequence id_ciudad_sequence
-  start 1000
+  start 1
   increment 1;
 
 --Creamos tabla Ciudad
@@ -93,11 +108,80 @@ create table ciudad (
 	ciudad ciudad_ob
 )with oids;
 
+-- Vemos como ha quedado la tabla
+\d ciudad
+
+-- PRUEBAS
+
 -- Insertamos una fila en ciudad
 insert into ciudad values(
 nextval('id_ciudad_sequence'),
 ('Barcelona','Una ciudad Bonita','Spain'));
 
+insert into ciudad values(
+nextval('id_ciudad_sequence'),
+('Madrid','Una ciudad Bonita','Spain'));
+
+-- Vemos como se inserta bien y se incrementa el id_ciudad
+select * from ciudad;
+
+-- Tabla para guardar los viajes de cada persona
+-- Sequence para id_viaje
+create sequence id_viaje_sequence
+  start 1
+  increment 1;
+
+-- Creamos la tabla viaje que hereda de persona
+create table viaje (
+    id_viaje serial primary key,
+    id_ciudad int
+) inherits (persona);
+
+-- Vemos como ha quedado la tabla
+\d viaje
+
+-- PRUEBAS
+-- Insertamos un viaje junto a los datos de su persona y el id de la ciudad
+insert into viaje values ('11111111A',1,
+('Jose','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'),
+nextval('id_viaje_sequence'),1);
+
+-- Otros viajes
+insert into viaje values ('00000000A',1,
+('Marc','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'),
+nextval('id_viaje_sequence'),2);
+
+insert into viaje values ('00000000A',1,
+('Marc','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'),
+nextval('id_viaje_sequence'),2);
+
+-- Comprobamos que si ponemos mal el dni no deja insertar
+insert into viaje values ('111111A',1,
+('Jose','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'),
+nextval('id_viaje_sequence'),1);
+
+-- Vemos que datos hay en viaje
+select * from viaje;
+
+
+
+-- Gestion de eliminaciones
+
+-- JUEGO DE CONSULTAS
+
+-- Aqui vemos que Jose De Prueba ha ido a Barcelona 1 vez
+select v.*,c.ciudad from viaje v
+join ciudad c on c.id_ciudad=v.id_ciudad
+where v.dni = '11111111A';
+
+-- Aqui vemos que Marc De Prueba ha ido a Madrid 2 veces
+select v.*,c.ciudad from viaje v
+join ciudad c on c.id_ciudad=v.id_ciudad
+where v.dni = '00000000A';
 
 -- Tareas
 -- Tabla con inherits
