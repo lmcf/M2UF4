@@ -48,38 +48,27 @@ create table persona of persona_ob (
 -- Insert para probar
 insert into persona values ('11111111A',1,('Jose','De','Prueba'),('Calle la calle',420,'2','4',07034,'Barcelona','Spain'));
 
---Creamos tipo Hotel
-create type hotel_ob as (
-	nombre_hotel varchar(30),
-	habitaciones int,
-	Calle varchar(30),
+-- Tipo direccion Hotel
+create type direccion_hotel_ob as (
+    Calle varchar(30),
     Numero int,
     Codigo_postal int
 );
 
--- Sequence para id_hotel
-create sequence id_hotel_sequence
-  start 1000
-  increment 1;
-
--- Sequence para id_hotel
-create table hotel(
-    id_hotel serial primary key,
-    hoteles hotel_ob[]
-);
-
--- Insert prueba hoteles
--- FALLA
-insert into hotel values(
-    nextval('id_hotel_sequence'),
-    ARRAY["('Hillton', 200, 'La calle', 2, 4)"]
+--Creamos tipo Hotel
+create type hotel_ob as (
+    id_hotel int,
+	nombre_hotel varchar(30),
+	habitaciones int,
+	direcion_hotel direccion_hotel_ob
 );
 
 -- Creamos el tipo ciudad
 create type ciudad_ob as (
 	Nombre_ciudad varchar(40),
 	Descripcion varchar(100),
-	Pais varchar(40)
+	Pais varchar(40),
+	Hoteles hotel_ob[]
 );
 
 -- Sequence para id_ciudad
@@ -87,16 +76,29 @@ create sequence id_ciudad_sequence
   start 1000
   increment 1;
 
+-- Sequence para id_hotel
+create sequence id_hotel_sequence
+  start 1000
+  increment 1;
+
 --Creamos tabla Ciudad
 create table ciudad (
-	id_ciudad serial primary key,
+	id_ciudad serial,
 	ciudad ciudad_ob
 )with oids;
 
 -- Insertamos una fila en ciudad
 insert into ciudad values(
 nextval('id_ciudad_sequence'),
-('Barcelona','Una ciudad Bonita','Spain'));
+('Barcelona','Una ciudad Bonita','Spain',
+ARRAY[(nextval('id_hotel_sequence'),'Hillton',200,
+('La calle',2,4))]));
+
+insert into ciudad values(
+nextval('id_ciudad_sequence'),
+('Barcelona','Una ciudad Bonita','Spain',
+ARRAY[(nextval("id_hotel_sequence"),"Hillton",200,
+("La calle",2,4))]));
 
 
 -- Tareas
