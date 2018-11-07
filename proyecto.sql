@@ -63,8 +63,8 @@ create type hotel_ob as (
 
 -- Sequence para id_hotel
 create sequence id_hotel_sequence
-  start 1
-  increment 1;
+    start 1
+    increment 1;
 
 -- Creamos la tabla hotel
 create table hotel(
@@ -203,6 +203,7 @@ insert into hotel values(
 
 -- Vemos la tabla hotel
 select * from hotel;
+
 -- PRUEBAS TABLA CIUDAD
 
 -- Vemos como ha quedado la tabla ciudad
@@ -280,18 +281,6 @@ select * from viaje;
 --JUEGO DE CONSULTAS--
 ----------------------
 
-select * from viaje;
-
--- Aqui vemos que Jose De Prueba ha ido a Barcelona 1 vez
-select v.*,c.ciudad from viaje v
-join ciudad c on c.id_ciudad=v.id_ciudad
-where v.dni = '11111111A';
-
--- Aqui vemos que Marc De Prueba ha ido a Madrid 2 veces
-select v.*,c.ciudad from viaje v
-join ciudad c on c.id_ciudad=v.id_ciudad
-where v.dni = '22222222A';
-
 -- PRUEBA COMPRA DE UN VIAJE
 
 -- Reserva de un viaje
@@ -300,9 +289,9 @@ insert into viaje values ('11114444A',(incrementar_numero_viajes('111111A')),
 ('Calle la calle',420,'2','4',07034,'Barcelona','Spain'),
 nextval('id_viaje_sequence'),1,default);
 
--- Ver el viajes reservado
 select 'Viaje reservado correctamente' as info;
 
+-- Ver el viajes reservado
 select v.id_viaje, (c.ciudad).Nombre_ciudad, v.dni, v.comprado
 from viaje v
 join ciudad c on c.id_ciudad=v.id_ciudad
