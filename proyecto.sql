@@ -1,9 +1,16 @@
+---------------------------------------------
+--CREACION DE LA BASE DE DATOS Y SUS TABLAS--
+---------------------------------------------
+
 -- Eliminamos la base de datos si existe
 drop database if exists agenciadeviajes;
 -- Creamos la base de datos
 create database agenciadeviajes;
+
 -- Vemos la tabla estamos usando para comprobar que se ha creado bien
 \c agenciadeviajes;
+
+-- CREACION TABLA PERSONA
 
 -- Creamos un tipo para la direccion completa
 create type direccion_ob as (
@@ -42,25 +49,10 @@ create table persona of persona_ob (
     primary key (dni)
 ) with oids;
 
--- Vemos como ha quedado la tabla
-\d persona
 
--- PRUEBAS
--- Prueba de validar_dni en este caso está bien el dni
-insert into persona values ('11111111A',1,
-('Jose','De','Prueba'),
-('Calle la calle',420,'2','4',07034,'Barcelona','Spain'));
+-- CREACION TABLA HOTEL
 
--- En los siguientes casos está mal
-insert into persona values ('1111111AA',1,
-('Jose','De','Prueba'),
-('Calle la calle',420,'2','4',07034,'Barcelona','Spain'));
-
-insert into persona values ('11111A',1,
-('Jose','De','Prueba'),
-('Calle la calle',420,'2','4',07034,'Barcelona','Spain'));
-
---Creamos tipo Hotel
+-- Creamos tipo Hotel
 create type hotel_ob as (
 	nombre_hotel varchar(30),
 	habitaciones int,
@@ -74,21 +66,13 @@ create sequence id_hotel_sequence
   start 1
   increment 1;
 
--- Sequence para id_hotel
+-- Creamos la tabla hotel
 create table hotel(
     id_hotel serial primary key,
-    hoteles hotel_ob[]
+    hoteles hotel_ob
 );
 
--- Vemos como ha quedado la tabla
-\d hotel
-
--- Insert prueba hoteles
--- FALLA
-insert into hotel values(
-    nextval('id_hotel_sequence'),
-    ARRAY["('Hillton', 200, 'La calle', 2, 4)"]
-);
+-- CREACION TABLA CIUDAD
 
 -- Creamos el tipo ciudad
 create type ciudad_ob as (
@@ -108,12 +92,124 @@ create table ciudad (
 	ciudad ciudad_ob
 )with oids;
 
--- Vemos como ha quedado la tabla
+-- CREACION TABLA VIAJE
+
+-- Sequence para id_viaje
+create sequence id_viaje_sequence
+  start 1
+  increment 1;
+
+
+-- Funcion para incrementar el contador de viajes por persona y cambiar el campo de todos las filas de esa persona
+create or replace function incrementar_numero_viajes(dni_in varchar(9))
+returns integer as
+$body$
+declare
+num int := (select count(dni) from viaje where dni = dni_in);
+begin
+    if num = 0 then
+        return 1;
+    else
+        update viaje set Num_viajes = num+1 where dni = dni_in;
+        return num+1;
+    end if;
+end;
+$body$
+language 'plpgsql';
+
+-- Creamos la tabla viaje que hereda de persona
+create table viaje (
+    id_viaje serial primary key,
+    id_ciudad int,
+    comprado boolean default false
+) inherits (persona);
+
+-- Gestion de eliminaciones
+
+-----------
+--PRUEBAS--
+-----------
+
+-- PRUEBAS TABLA PERSONA
+-- Vemos como ha quedado la tabla persona
+\d persona
+
+-- Pruebas del domain check validar_dni
+
+-- Bien
+insert into persona values ('11111111A',1,
+('Jose','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'));
+
+insert into persona values ('22222222A',1,
+('Jose','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'));
+
+insert into persona values ('33333333A',1,
+('Jose','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'));
+
+insert into persona values ('44444444A',1,
+('Jose','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'));
+
+-- Mal
+-- Dni invalido
+insert into persona values ('1111111AA',1,
+('Jose','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'));
+
+insert into persona values ('11111A',1,
+('Jose','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'));
+
+-- Dni repetido
+insert into persona values ('11111111A',1,
+('Jose','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'));
+
+insert into persona values ('22222222A',1,
+('Jose','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'));
+
+-- Vemos la tabla persona
+select * from persona;
+
+-- PRUEBAS TABLA HOTEL
+
+-- Vemos como ha quedado la tabla hotel
+\d hotel
+
+-- Inserts de prueba hoteles
+insert into hotel values(
+    nextval('id_hotel_sequence'),
+    ('Hillton', 200, 'La calle', 2, 4)
+);
+
+insert into hotel values(
+    nextval('id_hotel_sequence'),
+    ('Hotel Vela', 20, 'La calle', 2, 4)
+);
+
+insert into hotel values(
+    nextval('id_hotel_sequence'),
+    ('Hotel Safa', 30, 'La calle', 2, 4)
+);
+
+insert into hotel values(
+    nextval('id_hotel_sequence'),
+    ('El Hotel', 10, 'La calle', 2, 4)
+);
+
+-- Vemos la tabla hotel
+select * from hotel;
+-- PRUEBAS TABLA CIUDAD
+
+-- Vemos como ha quedado la tabla ciudad
 \d ciudad
 
--- PRUEBAS
+-- Insertamos unas fila en ciudad
 
--- Insertamos una fila en ciudad
 insert into ciudad values(
 nextval('id_ciudad_sequence'),
 ('Barcelona','Una ciudad Bonita','Spain'));
@@ -122,56 +218,69 @@ insert into ciudad values(
 nextval('id_ciudad_sequence'),
 ('Madrid','Una ciudad Bonita','Spain'));
 
--- Vemos como se inserta bien y se incrementa el id_ciudad
+insert into ciudad values(
+nextval('id_ciudad_sequence'),
+('Elche','Una ciudad Bonita','Spain'));
+
+insert into ciudad values(
+nextval('id_ciudad_sequence'),
+('Valencia','Una ciudad Bonita','Spain'));
+
+-- Vemos la tabla ciudad
 select * from ciudad;
 
--- Tabla para guardar los viajes de cada persona
--- Sequence para id_viaje
-create sequence id_viaje_sequence
-  start 1
-  increment 1;
+-- PRUEBAS TABLA VIAJE
 
--- Creamos la tabla viaje que hereda de persona
-create table viaje (
-    id_viaje serial primary key,
-    id_ciudad int
-) inherits (persona);
-
--- Vemos como ha quedado la tabla
+-- Vemos como ha quedado la tabla viaje
 \d viaje
 
--- PRUEBAS
 -- Insertamos un viaje junto a los datos de su persona y el id de la ciudad
-insert into viaje values ('11111111A',1,
-('Jose','De','Prueba'),
+-- Aqui vemos que le metemos 3 viajes entonces en la tabla cada insert 
+insert into viaje values ('11111111A',(incrementar_numero_viajes('11111111A')),
+('Marc','De','Prueba'),
 ('Calle la calle',420,'2','4',07034,'Barcelona','Spain'),
-nextval('id_viaje_sequence'),1);
+nextval('id_viaje_sequence'),2,default);
+
+insert into viaje values ('11111111A',(incrementar_numero_viajes('11111111A')),
+('Marc','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'),
+nextval('id_viaje_sequence'),2,default);
+
+insert into viaje values ('11111111A',(incrementar_numero_viajes('11111111A')),
+('Marc','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'),
+nextval('id_viaje_sequence'),2,default);
 
 -- Otros viajes
-insert into viaje values ('00000000A',1,
+insert into viaje values ('22222222A',(incrementar_numero_viajes('22222222A')),
 ('Marc','De','Prueba'),
 ('Calle la calle',420,'2','4',07034,'Barcelona','Spain'),
-nextval('id_viaje_sequence'),2);
+nextval('id_viaje_sequence'),2,default);
 
-insert into viaje values ('00000000A',1,
+insert into viaje values ('22222222A',(incrementar_numero_viajes('22222222A')),
 ('Marc','De','Prueba'),
 ('Calle la calle',420,'2','4',07034,'Barcelona','Spain'),
-nextval('id_viaje_sequence'),2);
+nextval('id_viaje_sequence'),2,default);
+
+insert into viaje values ('33333333A',(incrementar_numero_viajes('33333333A')),
+('Marc','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'),
+nextval('id_viaje_sequence'),2,default);
 
 -- Comprobamos que si ponemos mal el dni no deja insertar
-insert into viaje values ('111111A',1,
+insert into viaje values ('111111A',(incrementar_numero_viajes('111111A')),
 ('Jose','De','Prueba'),
 ('Calle la calle',420,'2','4',07034,'Barcelona','Spain'),
-nextval('id_viaje_sequence'),1);
+nextval('id_viaje_sequence'),1,default);
 
--- Vemos que datos hay en viaje
+-- Vemos la tabla viaje
 select * from viaje;
 
+----------------------
+--JUEGO DE CONSULTAS--
+----------------------
 
-
--- Gestion de eliminaciones
-
--- JUEGO DE CONSULTAS
+select * from viaje;
 
 -- Aqui vemos que Jose De Prueba ha ido a Barcelona 1 vez
 select v.*,c.ciudad from viaje v
@@ -181,8 +290,42 @@ where v.dni = '11111111A';
 -- Aqui vemos que Marc De Prueba ha ido a Madrid 2 veces
 select v.*,c.ciudad from viaje v
 join ciudad c on c.id_ciudad=v.id_ciudad
-where v.dni = '00000000A';
+where v.dni = '22222222A';
 
--- Tareas
--- Tabla con inherits
+-- PRUEBA COMPRA DE UN VIAJE
+
+-- Reserva de un viaje
+insert into viaje values ('11114444A',(incrementar_numero_viajes('111111A')),
+('Jose','De','Prueba'),
+('Calle la calle',420,'2','4',07034,'Barcelona','Spain'),
+nextval('id_viaje_sequence'),1,default);
+
+-- Ver el viajes reservado
+select 'Viaje reservado correctamente' as info;
+
+select v.id_viaje, (c.ciudad).Nombre_ciudad, v.dni, v.comprado
+from viaje v
+join ciudad c on c.id_ciudad=v.id_ciudad
+where v.dni = '11114444A';
+
+-- Comprar el viaje reservado
+
+update viaje set comprado = true where id_viaje = 7;
+
+select 'Viaje comprado correctamente' as info;
+
+-- Ver viajes comprados
+select 'Viajes comprados' as info;
+
+select v.id_viaje, (c.ciudad).Nombre_ciudad, v.dni, v.comprado
+from viaje v
+join ciudad c on c.id_ciudad=v.id_ciudad
+where v.dni = '11114444A' and v.comprado is true;
+
+----------
+--TAREAS--
+----------
 -- Gestionar eliminaciones on update y on delete
+-- on delete bajar el número de viajes hechos por x persona
+-- Usar un array
+-- Acabar diagrama ER
