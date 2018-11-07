@@ -124,7 +124,25 @@ create table viaje (
     comprado boolean default false
 ) inherits (persona);
 
--- Gestion de eliminaciones
+-- Gestion de eliminaciones de viaje
+
+-- Creamos la funcion que usara el trigger para actualizar el numero de viajes
+create or replace function actualizar_numero_viajes()
+returns trigger as
+$body$
+begin
+    update viaje set Num_viajes = Num_viajes-1 where dni = old.dni;
+    return old;
+end;
+$body$
+language 'plpgsql';
+
+-- Creamos el trigger que se ejecutara despues de la eliminacion en la tabla viaje
+create trigger actualizar_num_viajes_trigger
+    after delete on viaje
+    for each row
+    execute procedure actualizar_numero_viajes();
+
 
 -----------
 --PRUEBAS--
@@ -277,6 +295,17 @@ nextval('id_viaje_sequence'),1,default);
 -- Vemos la tabla viaje
 select * from viaje;
 
+-- Pruebas de eliminacion
+
+-- Antes de eliminar
+select * from viaje;
+
+-- Eliminamos 1 fila y vemos como el campo num_viajes se actualiza a uno menos
+delete from viaje where id_viaje=1;
+
+-- Despues de eliminar
+select * from viaje;
+
 ----------------------
 --JUEGO DE CONSULTAS--
 ----------------------
@@ -311,10 +340,3 @@ from viaje v
 join ciudad c on c.id_ciudad=v.id_ciudad
 where v.dni = '11114444A' and v.comprado is true;
 
-----------
---TAREAS--
-----------
--- Gestionar eliminaciones on update y on delete
--- on delete bajar el número de viajes hechos por x persona
--- Usar un array
--- Acabar diagrama ER
